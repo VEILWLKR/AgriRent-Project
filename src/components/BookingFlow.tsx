@@ -14,6 +14,7 @@ import { formatNaira, calculateBookingPricing, calculateDateDiffDays } from '../
 import { formatAndValidateNigerianPhone, sanitizeInput } from '../utils/security';
 import { NIGERIAN_STATES } from '../utils/location';
 import { ApiService } from '../services/api';
+import { getEquipmentDisplayImage } from '../utils/equipmentImages';
 
 interface BookingFlowProps {
   equipment: Equipment;
@@ -496,7 +497,7 @@ export const BookingFlow: React.FC<BookingFlowProps> = ({
 
               <div className="flex items-center gap-3">
                 <img
-                  src={equipment.imageUrl}
+                  src={getEquipmentDisplayImage(equipment)}
                   alt={equipment.title}
                   referrerPolicy="no-referrer"
                   className="w-14 h-14 rounded-[8px] object-cover border border-[#DCE9DE]"

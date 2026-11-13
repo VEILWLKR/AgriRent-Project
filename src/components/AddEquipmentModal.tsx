@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Equipment, EquipmentCategory } from '../types';
 import { sanitizeInput } from '../utils/security';
+import { EQUIPMENT_CATEGORY_TEMPLATE_IMAGES as templateImages, getEquipmentDisplayImage } from '../utils/equipmentImages';
 
 interface AddEquipmentModalProps {
   onClose: () => void;
@@ -16,22 +17,6 @@ interface AddEquipmentModalProps {
   ownerName: string;
   initialEquipment?: Equipment | null;
 }
-
-const templateImages: Record<EquipmentCategory, string[]> = {
-  Tractors: ['/src/assets/images/agri_tractor_field_1794305594217.jpg'],
-  Harvesters: ['/src/assets/images/agri_combine_harvester_1794305594321.jpg'],
-  Tillers: ['/src/assets/images/agri_rotary_tiller_template.jpg'],
-  Irrigation: ['/src/assets/images/agri_irrigation_template.jpg'],
-  Planters: ['/src/assets/images/agri_planter_template.jpg'],
-  Trailers: ['/src/assets/images/agri_trailer_template.jpg'],
-  Ploughs: ['/src/assets/images/agri_plough_template.jpg'],
-  Sprayers: ['/src/assets/images/agri_sprayer_template.jpg'],
-  Seeders: ['/src/assets/images/agri_seeder_template.jpg'],
-  Threshers: ['/src/assets/images/agri_thresher_template.jpg'],
-  Balers: ['/src/assets/images/agri_baler_template.jpg'],
-  Cultivators: ['/src/assets/images/agri_rotary_tiller_template.jpg'],
-  Shellers: ['/src/assets/images/agri_sheller_template.jpg'],
-};
 
 export const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({
   onClose,
@@ -41,7 +26,7 @@ export const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({
 }) => {
   const [title, setTitle] = useState<string>(initialEquipment?.title || '');
   const [category, setCategory] = useState<EquipmentCategory>(initialEquipment?.category || 'Tractors');
-  const [imageUrl, setImageUrl] = useState<string>(initialEquipment?.imageUrl || templateImages[initialEquipment?.category || 'Tractors'][0]);
+  const [imageUrl, setImageUrl] = useState<string>(initialEquipment ? getEquipmentDisplayImage(initialEquipment) : templateImages.Tractors);
   const [dailyRate, setDailyRate] = useState<number | ''>(initialEquipment?.dailyRate || '');
   const [locationState, setLocationState] = useState<string>(initialEquipment?.locationState || '');
   const [locationLGA, setLocationLGA] = useState<string>(initialEquipment?.locationLGA || '');
@@ -156,7 +141,7 @@ export const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({
                 onChange={(e) => {
                   const nextCategory = e.target.value as EquipmentCategory;
                   setCategory(nextCategory);
-                  setImageUrl(templateImages[nextCategory][0]);
+                  setImageUrl(templateImages[nextCategory]);
                 }}
                 className="w-full px-3 py-2 text-xs bg-white border border-[#DCE9DE] rounded-[8px] focus:outline-none focus:border-[#174D35]"
               >
@@ -215,11 +200,9 @@ export const AddEquipmentModal: React.FC<AddEquipmentModalProps> = ({
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">
-              {templateImages[category].map(template => (
-                <button key={template} type="button" onClick={() => setImageUrl(template)} className={`w-20 h-14 rounded-lg overflow-hidden border-2 ${imageUrl === template ? 'border-[#E6A23C]' : 'border-transparent'}`}>
-                  <img src={template} alt={`${category} template`} className="w-full h-full object-cover" />
-                </button>
-              ))}
+              <button type="button" onClick={() => setImageUrl(templateImages[category])} className={`w-20 h-14 rounded-lg overflow-hidden border-2 ${imageUrl === templateImages[category] ? 'border-[#E6A23C]' : 'border-transparent'}`}>
+                <img src={templateImages[category]} alt={`${category} template`} className="w-full h-full object-cover" />
+              </button>
               <label className="w-20 h-14 rounded-lg border border-dashed border-[#174D35] bg-white flex flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#174D35] cursor-pointer">
                 <Upload className="w-4 h-4" />
                 Upload

@@ -26,6 +26,7 @@ import { formatNaira, getTimeBasedGreeting } from '../utils/formatters';
 import { getRealtimeFarmWeather, WeatherData } from '../services/weather';
 import { ApiService } from '../services/api';
 import { distanceBetweenCoordinates, geocodeNigeriaLocation, getDashboardOriginCoordinates } from '../utils/location';
+import { getBookingDisplayImage, getEquipmentDisplayImage } from '../utils/equipmentImages';
 
 interface FarmerDashboardProps {
   currentUser: UserType;
@@ -751,7 +752,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
               {/* Right Image */}
               <div className="w-full md:w-60 h-40 rounded-xl overflow-hidden shadow-md shrink-0 bg-[#174D35]">
                 <img
-                  src={actionBooking?.equipmentImage || '/src/assets/images/agri_tractor_field_1794305594217.jpg'}
+                  src={getBookingDisplayImage(actionBooking?.equipmentImage)}
                   alt={actionBooking?.equipmentTitle || 'Farm planning'}
                   className="w-full h-full object-cover"
                 />
@@ -795,7 +796,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
                       {/* Image Header with Badge and Heart */}
                       <div className="relative h-44 bg-gray-100 overflow-hidden">
                         <img
-                          src={card.imageUrl}
+                          src={getEquipmentDisplayImage(card)}
                           alt={card.title}
                           className="w-full h-full object-cover"
                         />

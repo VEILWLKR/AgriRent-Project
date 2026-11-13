@@ -15,7 +15,7 @@ import { Equipment, EquipmentCategory } from '../types';
 import { CategoryIcon } from './CategoryIcons';
 import { formatNaira } from '../utils/formatters';
 import { calculateLocationProximityScore, distanceBetweenCoordinates, getCurrentCoordinates, geocodeNigeriaLocation } from '../utils/location';
-import { getEquipmentDisplayImage } from '../utils/equipmentImages';
+import { DEFAULT_EQUIPMENT_IMAGE, getEquipmentDisplayImage } from '../utils/equipmentImages';
 
 interface LandingPageProps {
   equipmentList: Equipment[];
@@ -212,7 +212,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="lg:col-span-5">
               <div className="relative rounded-[16px] overflow-hidden border border-white/20 shadow-xl bg-[#174D35]">
                 <img
-                  src="/src/assets/images/agri_tractor_field_1794305594217.jpg"
+                  src={DEFAULT_EQUIPMENT_IMAGE}
                   alt="Agricultural tractor working in farm field in Nigeria"
                   referrerPolicy="no-referrer"
                   className="w-full h-64 sm:h-80 lg:h-96 object-cover"

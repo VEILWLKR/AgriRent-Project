@@ -11,6 +11,7 @@ import { DEFAULT_FARMER_USER, DEFAULT_OWNER_USER, INITIAL_BOOKINGS, INITIAL_EQUI
 import { ActivityLogItem, Booking, Equipment, RentalRequest, User } from '../src/types';
 import { calculateBookingPricing, calculateDateDiffDays } from '../src/utils/formatters';
 import { formatAndValidateNigerianPhone } from '../src/utils/security';
+import { DEFAULT_EQUIPMENT_IMAGE, EQUIPMENT_IMAGE_URL_PREFIX } from '../src/utils/equipmentImages';
 
 const scrypt = promisify(scryptCallback);
 const port = Number(process.env.PORT || 3101);
@@ -188,6 +189,46 @@ const availabilityStatuses: Equipment['availability'][] = ['Available', 'Active 
 
 function parseJson<T>(value: string): T {
   return JSON.parse(value) as T;
+}
+
+function isValidEquipmentImageUrl(value: unknown): value is string {
+  return typeof value === 'string' && (
+    (value.startsWith(EQUIPMENT_IMAGE_URL_PREFIX) && value.length <= 200)
+    || (value.startsWith('data:image/') && value.length <= 1_500_000)
+  );
+}
+
+function migrateLegacyImagePaths(): void {
+  const legacyPrefix = '/src/assets/images/';
+  const toPublicImageUrl = (imageUrl: string) => {
+    if (!imageUrl.startsWith(legacyPrefix)) return imageUrl;
+    const filename = imageUrl.slice(legacyPrefix.length);
+    if (path.basename(filename) !== filename
+      || !fs.existsSync(path.join(process.cwd(), 'public', 'assets', 'equipment', filename))) {
+      return DEFAULT_EQUIPMENT_IMAGE;
+    }
+    return `${EQUIPMENT_IMAGE_URL_PREFIX}${filename}`;
+  };
+  const equipmentRows = db.prepare('SELECT id, data FROM equipment').all() as Array<{ id: string; data: string }>;
+  const bookingRows = db.prepare('SELECT id, data FROM bookings').all() as Array<{ id: string; data: string }>;
+  const updateEquipment = db.prepare('UPDATE equipment SET data = ? WHERE id = ?');
+  const updateBooking = db.prepare('UPDATE bookings SET data = ? WHERE id = ?');
+  db.transaction(() => {
+    for (const row of equipmentRows) {
+      const equipment = parseJson<Equipment>(row.data);
+      const imageUrl = toPublicImageUrl(equipment.imageUrl);
+      if (imageUrl !== equipment.imageUrl) {
+        updateEquipment.run(JSON.stringify({ ...equipment, imageUrl }), row.id);
+      }
+    }
+    for (const row of bookingRows) {
+      const booking = parseJson<Booking>(row.data);
+      const equipmentImage = toPublicImageUrl(booking.equipmentImage);
+      if (equipmentImage !== booking.equipmentImage) {
+        updateBooking.run(JSON.stringify({ ...booking, equipmentImage }), row.id);
+      }
+    }
+  })();
 }
 
 function hashToken(token: string): string {
@@ -606,8 +647,8 @@ function buildAdminEquipment(input: Partial<Equipment>, owner: User | null, curr
   if (!category || typeof input.title !== 'string' || !input.title.trim() || !Number.isFinite(Number(input.dailyRate)) || Number(input.dailyRate) <= 0) {
     throw new Error('Provide a valid equipment title, category, and daily rate.');
   }
-  const imageUrl = typeof input.imageUrl === 'string' && ((input.imageUrl.startsWith('/src/assets/') && input.imageUrl.length <= 200) || (input.imageUrl.startsWith('data:image/') && input.imageUrl.length <= 1_500_000))
-    ? input.imageUrl : current?.imageUrl || '/src/assets/images/agri_tractor_field_1794305594217.jpg';
+  const imageUrl = isValidEquipmentImageUrl(input.imageUrl)
+    ? input.imageUrl : current?.imageUrl || DEFAULT_EQUIPMENT_IMAGE;
   return {
     ...(current || {} as Equipment),
     id: current?.id || `eq-${randomBytes(10).toString('hex')}`,
@@ -1157,11 +1198,9 @@ app.post('/api/equipment', requireUser, (req: AuthRequest, res) => {
   }
   const safeText = (value: unknown, fallback: string, limit: number) =>
     typeof value === 'string' ? value.trim().slice(0, limit) : fallback;
-  const imageUrl = typeof input.imageUrl === 'string'
-    && ((input.imageUrl.startsWith('/src/assets/') && input.imageUrl.length <= 200)
-      || (input.imageUrl.startsWith('data:image/') && input.imageUrl.length <= 1_500_000))
+  const imageUrl = isValidEquipmentImageUrl(input.imageUrl)
     ? input.imageUrl
-    : '/src/assets/images/agri_tractor_field_1794305594217.jpg';
+    : DEFAULT_EQUIPMENT_IMAGE;
   const equipment: Equipment = {
     id: `eq-${randomBytes(10).toString('hex')}`,
     title: input.title.trim().slice(0, 120),
@@ -1222,9 +1261,7 @@ app.patch('/api/equipment/:id', requireUser, (req: AuthRequest, res) => {
   }
   const safeText = (value: unknown, fallback: string, limit: number) =>
     typeof value === 'string' ? value.trim().slice(0, limit) : fallback;
-  const imageUrl = typeof input.imageUrl === 'string'
-    && ((input.imageUrl.startsWith('/src/assets/') && input.imageUrl.length <= 200)
-      || (input.imageUrl.startsWith('data:image/') && input.imageUrl.length <= 1_500_000))
+  const imageUrl = isValidEquipmentImageUrl(input.imageUrl)
     ? input.imageUrl
     : current.imageUrl;
   const updated: Equipment = {
@@ -1325,6 +1362,7 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: 'An unexpected server error occurred.' });
 });
 
+migrateLegacyImagePaths();
 await initializeDemoData();
 await initializeAdminAccount();
 app.listen(port, '0.0.0.0', () => {

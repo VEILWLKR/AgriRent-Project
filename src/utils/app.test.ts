@@ -7,6 +7,8 @@ import {
   calculatePasswordStrength 
 } from './security';
 import { calculateLocationProximityScore } from './location';
+import { DEFAULT_EQUIPMENT_IMAGE, EQUIPMENT_CATEGORY_TEMPLATE_IMAGES, getBookingDisplayImage, getEquipmentDisplayImage } from './equipmentImages';
+import { INITIAL_EQUIPMENT } from '../data/mockData';
 
 test('formatNaira formats positive numbers with Naira symbol and separators', () => {
   assert.equal(formatNaira(45000), '₦45,000');
@@ -95,5 +97,19 @@ test('email validation regex matches standard addresses', () => {
   assert.equal(isValidEmail('mideben12@gmail.com'), true);
   assert.equal(isValidEmail('invalid-email'), false);
   assert.equal(isValidEmail('no-domain@'), false);
+});
+
+test('legacy equipment image paths fall back to the matching public category template', () => {
+  const harvester = INITIAL_EQUIPMENT.find(equipment => equipment.category === 'Harvesters');
+  assert.ok(harvester);
+
+  assert.equal(
+    getEquipmentDisplayImage({ ...harvester, imageUrl: '/src/assets/images/legacy-harvester.jpg' }),
+    EQUIPMENT_CATEGORY_TEMPLATE_IMAGES.Harvesters,
+  );
+  assert.equal(
+    getBookingDisplayImage('/src/assets/images/legacy-tractor.jpg'),
+    DEFAULT_EQUIPMENT_IMAGE,
+  );
 });
 
